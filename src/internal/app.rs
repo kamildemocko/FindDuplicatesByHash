@@ -15,13 +15,17 @@ impl App<'_> {
     }
 
     pub fn run(&mut self) {
-        self.load_db(self.root_folder);
+        let mut current_file_c: usize = 0;
+        let files_count = utils::count_files_with_glob(self.root_folder);
+
+        self.load_db(self.root_folder, files_count, &mut current_file_c);
+        println!();
 
         let duplicates = self.get_duplicates_from_db();
         self.print_duplicates(duplicates);
     }
 
-    fn load_db(&mut self, folder: &PathBuf) {
+    fn load_db(&mut self, folder: &PathBuf, files_count: usize, current_file_c: &mut usize) {
         let mut spinner = utils::get_loading_cycler();
 
         let folder_glob: glob::Paths =
@@ -33,15 +37,16 @@ impl App<'_> {
 
             match file_path.is_dir() {
                 true => {
-                    self.load_db(&file_path);
+                    self.load_db(&file_path, files_count, current_file_c);
                 },
                 false => {
                     let gen_hash = utils::generate_hash(&file_path).unwrap();
                     self.insert_file_hash(gen_hash, &file_path);
+                    *current_file_c += 1;
                 },
             }
 
-            print!("\r{}", spinner.next().unwrap());
+            print!("\r{} (File {} of {})", spinner.next().unwrap(), current_file_c, files_count);
             io::stdout().flush().unwrap()
         }
     }
@@ -66,11 +71,11 @@ impl App<'_> {
 
     fn print_duplicates(&self, duplicates: Vec<[u8; 32]>) {
         if duplicates.len() == 0 {
-            println!("\rNo duplicate found");
+            println!("No duplicate found");
             return
         }
 
-        println!("\rFound duplicates:");
+        println!("Found duplicates:");
         println!("{}", "-".repeat(80));
 
         for duplicate in duplicates {
@@ -84,12 +89,10 @@ impl App<'_> {
             let metadata = fs::metadata(first).unwrap();
             let file_size_bytes = metadata.len();
             let created = utils::format_system_time(metadata.created().unwrap());
-            let modified = utils::format_system_time(metadata.modified().unwrap());
 
-            println!("[size: {} MB | created: {} | modified: {}]",
+            println!("[size: {} MB | created: {}]",
                      file_size_bytes / 1024 / 1024,
                      created,
-                     modified,
             );
 
             println!("{}", "-".repeat(80));

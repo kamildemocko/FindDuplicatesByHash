@@ -6,12 +6,13 @@ use std::iter::Cycle;
 use std::path::PathBuf;
 use std::vec::IntoIter;
 use chrono::{DateTime, Local};
+use glob::glob;
 use sha2::{Sha256, Digest};
 
 pub fn generate_hash(path: &PathBuf) -> io::Result<[u8; 32]> {
     let mut file = File::open(path)?;
     let mut hasher = Sha256::new();
-    let mut buffer = [0; 1024];
+    let mut buffer = [0; 8192];
 
     loop {
         let bytes_read = file.read(&mut buffer)?;
@@ -37,4 +38,12 @@ pub fn get_loading_cycler<'a>() -> Cycle<IntoIter<&'a str>> {
     let spinner: Cycle<IntoIter<&str>> = arr.into_iter().cycle();
 
     spinner
+}
+
+pub fn count_files_with_glob(folder: &PathBuf) -> usize {
+    glob(format!(r"{}\**\*", folder.to_str().unwrap()).as_str())
+        .expect("glob func failed")
+        .filter_map(Result::ok)
+        .filter(|entry| entry.is_file())
+        .count()
 }
