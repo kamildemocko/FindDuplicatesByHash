@@ -9,3 +9,6 @@ and displays it together with size, date created and date modified
 <application> STRING
 ```
 _STRING_ is the path to the root folder
+
+## Screenshot
+![screenshot](resources/image.png)
